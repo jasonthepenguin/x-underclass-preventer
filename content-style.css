@@ -177,3 +177,35 @@ body.x-underclass-blocked #x-underclass-overlay {
 html.x-underclass-muted {
   filter: grayscale(60%);
 }
+
+#x-underclass-break-badge {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 2147483646;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(15, 20, 25, 0.88);
+  color: #f5f8fa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+#x-underclass-break-badge .x-underclass-badge-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(245, 248, 250, 0.7);
+}
+
+#x-underclass-break-badge .x-underclass-badge-countdown {
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}

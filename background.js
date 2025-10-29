@@ -7,7 +7,7 @@ const STORAGE_KEY = "xUnderclassPomodoroState";
 const ALARM_NAME = "pomodoroTransition";
 
 const DEFAULT_STATE = {
-  status: "idle", // idle | running | paused
+  status: "idle", // idle | running | paused | break_ready
   phase: "focus", // focus | break
   focusMinutes: DEFAULT_FOCUS_MINUTES,
   breakMinutes: DEFAULT_BREAK_MINUTES,
@@ -37,6 +37,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     case "START_SESSION":
       startSession(request.focusMinutes, request.breakMinutes)
+        .then(state => sendResponse({ state }))
+        .catch(() => sendResponse({ state: null }));
+      return true;
+    case "START_BREAK":
+      startBreak()
         .then(state => sendResponse({ state }))
         .catch(() => sendResponse({ state: null }));
       return true;
@@ -100,8 +105,39 @@ async function handleAlarm(alarm) {
   if (alarm.name !== ALARM_NAME) return;
 
   const state = await ensureState();
+  const now = Date.now();
+
+  const focusExpired =
+    state.status === "running" &&
+    state.phase === "focus" &&
+    typeof state.nextTransition === "number" &&
+    state.nextTransition <= now;
+  const breakExpired =
+    state.status === "running" &&
+    state.phase === "break" &&
+    typeof state.nextTransition === "number" &&
+    state.nextTransition <= now;
+
   const normalized = await normalizeState(state);
   await saveState(normalized);
+
+  if (focusExpired) {
+    const transitioned = await transitionToBreakReady(normalized);
+    scheduleAlarm(transitioned);
+    return;
+  }
+
+  if (
+    breakExpired ||
+    (normalized.status === "running" &&
+      normalized.phase === "break" &&
+      typeof normalized.nextTransition === "number" &&
+      normalized.nextTransition <= Date.now())
+  ) {
+    const transitioned = await transitionToNextFocus(normalized);
+    scheduleAlarm(transitioned);
+    return;
+  }
 
   if (normalized.status !== "running" || !normalized.nextTransition) {
     scheduleAlarm(normalized);
@@ -113,10 +149,15 @@ async function handleAlarm(alarm) {
     return;
   }
 
-  const advanced = advancePhase(normalized);
-  await saveState(advanced);
-  await broadcastState(advanced);
-  scheduleAlarm(advanced);
+  if (normalized.phase === "focus") {
+    const transitioned = await transitionToBreakReady(normalized);
+    scheduleAlarm(transitioned);
+  } else if (normalized.phase === "break") {
+    const transitioned = await transitionToNextFocus(normalized);
+    scheduleAlarm(transitioned);
+  } else {
+    scheduleAlarm(normalized);
+  }
 }
 
 async function setDurations(focusMinutes, breakMinutes) {
@@ -138,6 +179,13 @@ async function setDurations(focusMinutes, breakMinutes) {
     updated = {
       ...updated,
       remainingMs: remaining
+    };
+  } else if (state.status === "break_ready") {
+    updated = {
+      ...updated,
+      phase: "break",
+      status: "break_ready",
+      remainingMs: breakMs
     };
   }
 
@@ -161,6 +209,30 @@ async function startSession(focusMinutes, breakMinutes) {
     breakMinutes: minutesFromMs(breakMs),
     cycleStart: now,
     nextTransition: now + focusMs,
+    remainingMs: null
+  };
+
+  await saveState(updated);
+  await broadcastState(updated);
+  scheduleAlarm(updated);
+  return updated;
+}
+
+async function startBreak() {
+  const state = await ensureState();
+  if (state.status !== "break_ready") {
+    return state;
+  }
+
+  const now = Date.now();
+  const breakMs = toMs(state.breakMinutes);
+
+  const updated = {
+    ...state,
+    status: "running",
+    phase: "break",
+    cycleStart: now,
+    nextTransition: now + breakMs,
     remainingMs: null
   };
 
@@ -255,15 +327,38 @@ function adjustRunningDurations(state, focusMs, breakMs) {
 async function normalizeState(state) {
   const normalized = { ...DEFAULT_STATE, ...state };
 
+  if (normalized.status === "break_ready") {
+    if (typeof normalized.remainingMs !== "number") {
+      normalized.remainingMs = toMs(normalized.breakMinutes);
+    }
+    return normalized;
+  }
+
   if (normalized.status !== "running" || !normalized.nextTransition) {
     return normalized;
+  }
+
+  const now = Date.now();
+
+  if (
+    normalized.phase === "focus" &&
+    typeof normalized.nextTransition === "number" &&
+    normalized.nextTransition <= now
+  ) {
+    return {
+      ...normalized,
+      status: "break_ready",
+      phase: "break",
+      cycleStart: null,
+      nextTransition: null,
+      remainingMs: toMs(normalized.breakMinutes)
+    };
   }
 
   const focusMs = toMs(normalized.focusMinutes);
   const breakMs = toMs(normalized.breakMinutes);
 
   let { phase, cycleStart, nextTransition } = normalized;
-  const now = Date.now();
 
   while (nextTransition !== null && nextTransition <= now) {
     if (phase === "focus") {
@@ -282,24 +377,6 @@ async function normalizeState(state) {
     phase,
     cycleStart,
     nextTransition
-  };
-}
-
-function advancePhase(state) {
-  const now = Date.now();
-  const nextPhase = state.phase === "focus" ? "break" : "focus";
-  const durationMs =
-    nextPhase === "focus"
-      ? toMs(state.focusMinutes)
-      : toMs(state.breakMinutes);
-
-  return {
-    ...state,
-    status: "running",
-    phase: nextPhase,
-    cycleStart: now,
-    nextTransition: now + durationMs,
-    remainingMs: null
   };
 }
 
@@ -354,4 +431,39 @@ async function handleActionClick(tab) {
 
 function isSupportedUrl(url) {
   return /^https:\/\/(www\.)?(x|twitter)\.com\//.test(url ?? "");
+}
+
+async function transitionToBreakReady(state) {
+  const breakMs = toMs(state.breakMinutes);
+
+  const updated = {
+    ...state,
+    status: "break_ready",
+    phase: "break",
+    cycleStart: null,
+    nextTransition: null,
+    remainingMs: breakMs
+  };
+
+  await saveState(updated);
+  await broadcastState(updated);
+  return updated;
+}
+
+async function transitionToNextFocus(state) {
+  const now = Date.now();
+  const focusMs = toMs(state.focusMinutes);
+
+  const updated = {
+    ...state,
+    status: "running",
+    phase: "focus",
+    cycleStart: now,
+    nextTransition: now + focusMs,
+    remainingMs: null
+  };
+
+  await saveState(updated);
+  await broadcastState(updated);
+  return updated;
 }

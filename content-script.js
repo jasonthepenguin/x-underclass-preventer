@@ -1,6 +1,7 @@
 // Content script that manages the blocking overlay and user controls on X.
 
 const OVERLAY_ID = "x-underclass-overlay";
+const BREAK_BADGE_ID = "x-underclass-break-badge";
 const DEFAULT_FALLBACK_STATE = {
   status: "idle",
   phase: "focus",
@@ -23,6 +24,7 @@ if (document.readyState === "loading") {
 async function initialize() {
   latestState = await requestState();
   updateOverlay(latestState);
+  renderBreakBadge(latestState);
   subscribeToMessages();
   startCountdownTimer();
 }
@@ -35,19 +37,22 @@ function subscribeToMessages() {
       const previous = latestState;
       latestState = message.state ?? null;
 
-      if (enteredBreak(previous, latestState)) {
-        userOverlayActive = false;
-      }
+      if (previous?.status !== latestState?.status || previous?.phase !== latestState?.phase) {
+        if (enteredBreak(previous, latestState)) {
+          userOverlayActive = false;
+        }
 
-      if (latestState?.status === "running" && latestState.phase === "focus") {
-        userOverlayActive = true;
-      }
+        if (enteredFocus(previous, latestState) || latestState?.status === "paused") {
+          userOverlayActive = true;
+        }
 
-      if (latestState?.status === "paused") {
-        userOverlayActive = true;
+        if (latestState?.status === "break_ready") {
+          userOverlayActive = true;
+        }
       }
 
       updateOverlay(latestState);
+      renderBreakBadge(latestState);
       return;
     }
 
@@ -57,6 +62,7 @@ function subscribeToMessages() {
       }
       userOverlayActive = true;
       updateOverlay(latestState ?? DEFAULT_FALLBACK_STATE);
+      renderBreakBadge(latestState ?? DEFAULT_FALLBACK_STATE);
     }
   });
 }
@@ -70,14 +76,30 @@ function enteredBreak(previous, current) {
   );
 }
 
+function enteredFocus(previous, current) {
+  return (
+    current?.status === "running" &&
+    current?.phase === "focus" &&
+    (previous?.phase !== "focus" || previous?.status !== "running")
+  );
+}
+
 function startCountdownTimer() {
   if (countdownInterval) {
     clearInterval(countdownInterval);
   }
 
   countdownInterval = setInterval(() => {
-    if (!shouldDisplayOverlay(latestState)) return;
-    renderCountdown(latestState);
+    if (!latestState) {
+      removeBreakBadge();
+      return;
+    }
+
+    if (shouldDisplayOverlay(latestState)) {
+      renderCountdown(latestState);
+    }
+
+    renderBreakBadge(latestState);
   }, 1000);
 }
 
@@ -94,10 +116,11 @@ async function requestState() {
 }
 
 function shouldDisplayOverlay(state) {
-  if (userOverlayActive) return true;
-  if (!state) return false;
+  if (!state) return userOverlayActive;
+  if (state.status === "break_ready") return true;
   if (state.status === "running" && state.phase === "focus") return true;
   if (state.status === "paused") return true;
+  if (userOverlayActive) return true;
   return false;
 }
 
@@ -144,6 +167,7 @@ function ensureOverlay() {
       </form>
       <div class="x-underclass-actions">
         <button type="button" class="primary" data-action="start">Start Focus</button>
+        <button type="button" class="primary" data-action="start-break">Start Break</button>
         <button type="button" data-action="pause">Pause</button>
         <button type="button" data-action="resume">Resume</button>
         <button type="button" class="text" data-action="stop">Stop Session</button>
@@ -171,6 +195,7 @@ function cacheOverlayElements(overlay) {
     saveButton: overlay.querySelector(".x-underclass-save"),
     feedback: overlay.querySelector(".x-underclass-feedback"),
     startButton: overlay.querySelector('[data-action="start"]'),
+    startBreakButton: overlay.querySelector('[data-action="start-break"]'),
     pauseButton: overlay.querySelector('[data-action="pause"]'),
     resumeButton: overlay.querySelector('[data-action="resume"]'),
     stopButton: overlay.querySelector('[data-action="stop"]')
@@ -195,6 +220,10 @@ function attachEventHandlers() {
 
   overlayElements.startButton.addEventListener("click", async () => {
     await startSession();
+  });
+
+  overlayElements.startBreakButton.addEventListener("click", async () => {
+    await beginBreak();
   });
 
   overlayElements.pauseButton.addEventListener("click", async () => {
@@ -235,15 +264,17 @@ function renderState(state) {
 
   const isRunningFocus =
     state.status === "running" && state.phase === "focus";
-  const isBreak = state.status === "running" && state.phase === "break";
+  const isBreakRunning = state.status === "running" && state.phase === "break";
+  const isBreakReady = state.status === "break_ready";
   const isPaused = state.status === "paused";
   const isIdle = state.status === "idle";
 
   toggleHidden(overlayElements.startButton, !isIdle);
+  toggleHidden(overlayElements.startBreakButton, !isBreakReady);
   toggleHidden(overlayElements.pauseButton, !isRunningFocus);
   toggleHidden(overlayElements.resumeButton, !isPaused);
-  toggleHidden(overlayElements.stopButton, isIdle);
-  toggleHidden(overlayElements.closeButton, isRunningFocus || isPaused);
+  toggleHidden(overlayElements.stopButton, isIdle && !isBreakReady && !isBreakRunning);
+  toggleHidden(overlayElements.closeButton, isRunningFocus || isPaused || isBreakReady);
 }
 
 function describeState(state) {
@@ -259,6 +290,10 @@ function describeState(state) {
 
   if (state.status === "paused") {
     return "Session paused";
+  }
+
+  if (state.status === "break_ready") {
+    return "Focus complete – start your break";
   }
 
   return "Idle";
@@ -321,6 +356,16 @@ async function startSession() {
   }
 }
 
+async function beginBreak() {
+  const state = await dispatch("START_BREAK");
+  if (state) {
+    latestState = state;
+    userOverlayActive = false;
+    updateOverlay(state);
+    renderBreakBadge(state);
+  }
+}
+
 function sanitizeMinutes(value, fallback) {
   const parsed = Number(value);
   if (Number.isFinite(parsed) && parsed > 0) {
@@ -330,6 +375,7 @@ function sanitizeMinutes(value, fallback) {
 }
 
 function renderCountdown(state) {
+  renderBreakBadge(state);
   if (!overlayElements) return;
   const countdownEl = overlayElements.countdown;
   if (!countdownEl) return;
@@ -343,6 +389,11 @@ function formatRemaining(state) {
 
   if (state.status === "paused") {
     const remaining = state.remainingMs ?? 0;
+    return formatMs(remaining);
+  }
+
+  if (state.status === "break_ready") {
+    const remaining = state.remainingMs ?? toMs(state.breakMinutes ?? DEFAULT_FALLBACK_STATE.breakMinutes);
     return formatMs(remaining);
   }
 
@@ -389,6 +440,42 @@ function removeOverlay() {
   clearBlockedStyles();
 }
 
+function renderBreakBadge(state) {
+  if (!state || state.status !== "running" || state.phase !== "break") {
+    removeBreakBadge();
+    return;
+  }
+
+  const badge = ensureBreakBadge();
+  const countdownText = formatRemaining(state);
+  const countdownEl = badge.querySelector(".x-underclass-badge-countdown");
+  if (countdownEl) {
+    countdownEl.textContent = countdownText;
+  }
+}
+
+function ensureBreakBadge() {
+  let badge = document.getElementById(BREAK_BADGE_ID);
+  if (badge) return badge;
+
+  badge = document.createElement("div");
+  badge.id = BREAK_BADGE_ID;
+  badge.innerHTML = `
+    <span class="x-underclass-badge-label">Break</span>
+    <span class="x-underclass-badge-countdown">--:--</span>
+  `;
+
+  document.body.appendChild(badge);
+  return badge;
+}
+
+function removeBreakBadge() {
+  const badge = document.getElementById(BREAK_BADGE_ID);
+  if (badge) {
+    badge.remove();
+  }
+}
+
 function applyBlockedStyles() {
   document.documentElement.classList.add("x-underclass-muted");
   document.body.classList.add("x-underclass-blocked");
@@ -397,6 +484,11 @@ function applyBlockedStyles() {
 function clearBlockedStyles() {
   document.documentElement.classList.remove("x-underclass-muted");
   document.body.classList.remove("x-underclass-blocked");
+}
+
+function toMs(minutes) {
+  const parsed = Number(minutes);
+  return Math.max(1, Math.round(parsed || 0)) * 60 * 1000;
 }
 
 function dispatch(type, payload = {}) {

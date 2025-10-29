@@ -5,9 +5,9 @@ A Chrome extension that blocks X (Twitter) during focus sessions with an inescap
 ## Features
 
 - Manual focus sessions kicked off from the toolbar icon while you are on X/Twitter.
-- Full-screen overlay with built-in controls to adjust durations, start, pause/resume, and stop.
+- Full-screen overlay with built-in controls to adjust durations, start, pause/resume, stop, and kick off breaks.
 - Countdown timer managed by a background service worker using `chrome.alarms`.
-- Overlay automatically dismisses during breaks so you can use the site when it is allowed.
+- Overlay automatically dismisses during breaks so you can use the site when it is allowed while a break badge tracks the remaining time.
 
 ## Getting Started
 
@@ -22,6 +22,7 @@ A Chrome extension that blocks X (Twitter) during focus sessions with an inescap
 
 - **Focus/Break durations**: Adjust the lengths (minutes) directly in the modal and hit **Save Durations**.
 - **Start Focus**: Begins a new focus cycle using the current durations.
+- **Start Break**: Appears once focus time is up—clicking it releases the overlay and starts the break countdown badge.
 - **Pause / Resume**: Temporarily halt the timer; resuming continues the countdown where you left off.
 - **Stop Session**: Return to idle and remove the overlay.
 - Close the overlay manually while idle/breaking if you just want to tweak settings without starting.
