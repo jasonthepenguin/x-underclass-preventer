@@ -1,0 +1,179 @@
+#x-underclass-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: all;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif;
+  color: #f5f8fa;
+}
+
+#x-underclass-overlay .x-underclass-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 16, 0.94);
+  backdrop-filter: blur(2px);
+}
+
+#x-underclass-overlay .x-underclass-modal {
+  position: relative;
+  width: min(420px, 92vw);
+  background: rgba(21, 24, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 36px 40px 30px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.x-underclass-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.x-underclass-status {
+  margin: 10px 0 12px;
+  font-size: 16px;
+  color: rgba(245, 248, 250, 0.75);
+}
+
+.x-underclass-countdown {
+  font-size: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 22px;
+}
+
+.x-underclass-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.x-underclass-field {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.x-underclass-field input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #f5f8fa;
+  font-size: 16px;
+}
+
+.x-underclass-field input:focus {
+  outline: none;
+  border-color: rgba(29, 161, 242, 0.6);
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.25);
+}
+
+.x-underclass-save {
+  align-self: center;
+  margin-top: 6px;
+}
+
+.x-underclass-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.x-underclass-modal button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.x-underclass-modal button.primary {
+  background: #1da1f2;
+  color: #f5f8fa;
+}
+
+.x-underclass-modal button.text {
+  background: transparent;
+  color: rgba(245, 248, 250, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.x-underclass-modal button:not(.text):not(.primary) {
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f1419;
+}
+
+.x-underclass-modal button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+.x-underclass-modal button.hidden {
+  display: none !important;
+}
+
+.x-underclass-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 248, 250, 0.85);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.x-underclass-feedback {
+  min-height: 18px;
+  font-size: 13px;
+  color: rgba(245, 248, 250, 0.75);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.x-underclass-feedback.visible {
+  opacity: 1;
+}
+
+.x-underclass-hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: rgba(245, 248, 250, 0.65);
+}
+
+.hidden {
+  display: none !important;
+}
+
+body.x-underclass-blocked {
+  pointer-events: none;
+  overflow: hidden;
+}
+
+body.x-underclass-blocked #x-underclass-overlay {
+  pointer-events: auto;
+}
+
+html.x-underclass-muted {
+  filter: grayscale(60%);
+}
