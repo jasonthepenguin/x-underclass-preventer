@@ -15,6 +15,7 @@ let feedbackTimer = null;
 let userOverlayActive = false;
 let overlayElements = null;
 let isActionInProgress = false;
+let audioContext = null;
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);
@@ -36,6 +37,43 @@ async function initialize() {
   startCountdownTimer();
 }
 
+function playNotificationSound() {
+  try {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const now = audioContext.currentTime;
+    const oscillator1 = audioContext.createOscillator();
+    const oscillator2 = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator1.connect(gainNode);
+    oscillator2.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // Two-tone chime: E5 (659.25 Hz) and A5 (880 Hz)
+    oscillator1.frequency.setValueAtTime(659.25, now);
+    oscillator2.frequency.setValueAtTime(880, now);
+
+    oscillator1.type = "sine";
+    oscillator2.type = "sine";
+
+    // Volume envelope: fade in and fade out
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.3, now + 0.05);
+    gainNode.gain.linearRampToValueAtTime(0.3, now + 0.3);
+    gainNode.gain.linearRampToValueAtTime(0, now + 0.6);
+
+    oscillator1.start(now);
+    oscillator2.start(now);
+    oscillator1.stop(now + 0.6);
+    oscillator2.stop(now + 0.6);
+  } catch (error) {
+    // Silently fail if audio not supported
+  }
+}
+
 function subscribeToMessages() {
   chrome.runtime.onMessage.addListener(message => {
     if (!message?.type) return;
@@ -47,14 +85,20 @@ function subscribeToMessages() {
       if (previous?.status !== latestState?.status || previous?.phase !== latestState?.phase) {
         if (enteredBreak(previous, latestState)) {
           userOverlayActive = false;
+          playNotificationSound();
         }
 
         if (enteredFocus(previous, latestState) || latestState?.status === "paused") {
           userOverlayActive = true;
+          // Play sound when break ends and new focus begins automatically
+          if (enteredFocusFromBreak(previous, latestState)) {
+            playNotificationSound();
+          }
         }
 
         if (latestState?.status === "break_ready") {
           userOverlayActive = true;
+          playNotificationSound();
         }
       }
 
@@ -88,6 +132,15 @@ function enteredFocus(previous, current) {
     current?.status === "running" &&
     current?.phase === "focus" &&
     (previous?.phase !== "focus" || previous?.status !== "running")
+  );
+}
+
+function enteredFocusFromBreak(previous, current) {
+  return (
+    previous?.status === "running" &&
+    previous?.phase === "break" &&
+    current?.status === "running" &&
+    current?.phase === "focus"
   );
 }
 
