@@ -11,15 +11,22 @@ const DEFAULT_FALLBACK_STATE = {
 
 let latestState = null;
 let countdownInterval = null;
-let saveStatusTimer = null;
+let feedbackTimer = null;
 let userOverlayActive = false;
 let overlayElements = null;
+let isActionInProgress = false;
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);
 } else {
   initialize();
 }
+
+window.addEventListener("beforeunload", () => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+});
 
 async function initialize() {
   latestState = await requestState();
@@ -227,30 +234,51 @@ function attachEventHandlers() {
   });
 
   overlayElements.pauseButton.addEventListener("click", async () => {
+    if (isActionInProgress) return;
+    isActionInProgress = true;
+    setButtonsDisabled(true);
+
     const state = await dispatch("PAUSE_SESSION");
     if (state) {
       latestState = state;
       renderState(state);
       renderCountdown(state);
     }
+
+    isActionInProgress = false;
+    setButtonsDisabled(false);
   });
 
   overlayElements.resumeButton.addEventListener("click", async () => {
+    if (isActionInProgress) return;
+    isActionInProgress = true;
+    setButtonsDisabled(true);
+
     const state = await dispatch("RESUME_SESSION");
     if (state) {
       latestState = state;
       renderState(state);
       renderCountdown(state);
     }
+
+    isActionInProgress = false;
+    setButtonsDisabled(false);
   });
 
   overlayElements.stopButton.addEventListener("click", async () => {
+    if (isActionInProgress) return;
+    isActionInProgress = true;
+    setButtonsDisabled(true);
+
     const state = await dispatch("STOP_SESSION");
     if (state) {
       latestState = state;
       userOverlayActive = false;
       removeOverlay();
     }
+
+    isActionInProgress = false;
+    setButtonsDisabled(false);
   });
 }
 
@@ -304,6 +332,21 @@ function toggleHidden(element, hidden) {
   element.classList.toggle("hidden", Boolean(hidden));
 }
 
+function setButtonsDisabled(disabled) {
+  if (!overlayElements) return;
+  const buttons = [
+    overlayElements.startButton,
+    overlayElements.startBreakButton,
+    overlayElements.pauseButton,
+    overlayElements.resumeButton,
+    overlayElements.stopButton,
+    overlayElements.saveButton
+  ];
+  buttons.forEach(btn => {
+    if (btn) btn.disabled = disabled;
+  });
+}
+
 function updateInput(input, value) {
   if (!input) return;
   if (document.activeElement === input) return;
@@ -311,6 +354,10 @@ function updateInput(input, value) {
 }
 
 async function saveDurations() {
+  if (isActionInProgress) return;
+  isActionInProgress = true;
+  setButtonsDisabled(true);
+
   const focusMinutes = sanitizeMinutes(
     overlayElements.focusInput.value,
     latestState?.focusMinutes
@@ -331,9 +378,16 @@ async function saveDurations() {
     renderState(state);
     renderCountdown(state);
   }
+
+  isActionInProgress = false;
+  setButtonsDisabled(false);
 }
 
 async function startSession() {
+  if (isActionInProgress) return;
+  isActionInProgress = true;
+  setButtonsDisabled(true);
+
   const focusMinutes = sanitizeMinutes(
     overlayElements.focusInput.value,
     latestState?.focusMinutes
@@ -354,9 +408,16 @@ async function startSession() {
     renderState(state);
     renderCountdown(state);
   }
+
+  isActionInProgress = false;
+  setButtonsDisabled(false);
 }
 
 async function beginBreak() {
+  if (isActionInProgress) return;
+  isActionInProgress = true;
+  setButtonsDisabled(true);
+
   const state = await dispatch("START_BREAK");
   if (state) {
     latestState = state;
@@ -364,6 +425,9 @@ async function beginBreak() {
     updateOverlay(state);
     renderBreakBadge(state);
   }
+
+  isActionInProgress = false;
+  setButtonsDisabled(false);
 }
 
 function sanitizeMinutes(value, fallback) {
@@ -421,11 +485,11 @@ function showFeedback(message) {
   overlayElements.feedback.textContent = message;
   overlayElements.feedback.classList.add("visible");
 
-  if (saveStatusTimer) {
-    clearTimeout(saveStatusTimer);
+  if (feedbackTimer) {
+    clearTimeout(feedbackTimer);
   }
 
-  saveStatusTimer = setTimeout(() => {
+  feedbackTimer = setTimeout(() => {
     overlayElements.feedback.textContent = "";
     overlayElements.feedback.classList.remove("visible");
   }, 1500);

@@ -126,6 +126,12 @@
   display: none !important;
 }
 
+.x-underclass-modal button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .x-underclass-close {
   position: absolute;
   top: 16px;

@@ -360,7 +360,11 @@ async function normalizeState(state) {
 
   let { phase, cycleStart, nextTransition } = normalized;
 
-  while (nextTransition !== null && nextTransition <= now) {
+  let safetyCounter = 0;
+  const MAX_ITERATIONS = 1000;
+
+  while (nextTransition !== null && nextTransition <= now && safetyCounter < MAX_ITERATIONS) {
+    safetyCounter++;
     if (phase === "focus") {
       phase = "break";
       cycleStart = nextTransition;
