@@ -114,6 +114,10 @@ async function requestState() {
   return new Promise(resolve => {
     try {
       chrome.runtime.sendMessage({ type: "GET_STATE" }, response => {
+        if (chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
         resolve(response?.state ?? null);
       });
     } catch (error) {
@@ -213,7 +217,9 @@ function attachEventHandlers() {
   if (!overlayElements) return;
 
   overlayElements.closeButton.addEventListener("click", () => {
-    if (latestState && (latestState.status === "running" || latestState.status === "paused")) {
+    if (latestState &&
+        ((latestState.status === "running" && latestState.phase === "focus") ||
+         latestState.status === "paused")) {
       return;
     }
     userOverlayActive = false;

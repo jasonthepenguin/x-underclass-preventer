@@ -395,7 +395,11 @@ function minutesFromMs(ms) {
 
 async function broadcastState(state) {
   try {
-    chrome.runtime.sendMessage({ type: "STATE_UPDATED", state });
+    chrome.runtime.sendMessage({ type: "STATE_UPDATED", state }, () => {
+      if (chrome.runtime.lastError) {
+        // ignore runtime message errors
+      }
+    });
   } catch (error) {
     // ignore runtime message errors
   }
@@ -411,7 +415,11 @@ async function broadcastState(state) {
     });
 
     for (const tab of tabs) {
-      chrome.tabs.sendMessage(tab.id, { type: "STATE_UPDATED", state });
+      chrome.tabs.sendMessage(tab.id, { type: "STATE_UPDATED", state }, () => {
+        if (chrome.runtime.lastError) {
+          // ignore tab message errors
+        }
+      });
     }
   } catch (error) {
     // ignore broadcast failures
