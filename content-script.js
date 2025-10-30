@@ -220,11 +220,11 @@ function ensureOverlay() {
       <div class="x-underclass-countdown">--:--</div>
       <div class="x-underclass-form">
         <label class="x-underclass-field">
-          <span>Focus length (minutes)</span>
+          <span>Focus</span>
           <input id="x-underclass-focus-input" type="number" min="1" max="180" required />
         </label>
         <label class="x-underclass-field">
-          <span>Break length (minutes)</span>
+          <span>Break</span>
           <input id="x-underclass-break-input" type="number" min="1" max="120" required />
         </label>
       </div>

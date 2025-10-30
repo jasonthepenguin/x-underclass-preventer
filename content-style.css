@@ -50,14 +50,16 @@
 
 .x-underclass-form {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 14px;
   margin-bottom: 20px;
+  justify-content: center;
 }
 
 .x-underclass-field {
   display: flex;
   flex-direction: column;
+  align-items: center;
   text-align: left;
   gap: 6px;
   font-size: 13px;
@@ -70,6 +72,8 @@
   padding: 9px 12px;
   color: #f5f8fa;
   font-size: 16px;
+  max-width: 100px;
+  text-align: center;
 }
 
 .x-underclass-field input:focus {
