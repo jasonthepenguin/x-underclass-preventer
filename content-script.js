@@ -165,7 +165,7 @@ function ensureOverlay() {
       <h1 class="x-underclass-title">Focus Time</h1>
       <p class="x-underclass-status">Idle</p>
       <div class="x-underclass-countdown">--:--</div>
-      <form class="x-underclass-form">
+      <div class="x-underclass-form">
         <label class="x-underclass-field">
           <span>Focus length (minutes)</span>
           <input id="x-underclass-focus-input" type="number" min="1" max="180" required />
@@ -174,8 +174,7 @@ function ensureOverlay() {
           <span>Break length (minutes)</span>
           <input id="x-underclass-break-input" type="number" min="1" max="120" required />
         </label>
-        <button type="submit" class="x-underclass-save primary">Save Durations</button>
-      </form>
+      </div>
       <div class="x-underclass-actions">
         <button type="button" class="primary" data-action="start">Start Focus</button>
         <button type="button" class="primary" data-action="start-break">Start Break</button>
@@ -184,7 +183,7 @@ function ensureOverlay() {
         <button type="button" class="text" data-action="stop">Stop Session</button>
       </div>
       <p class="x-underclass-feedback" role="status" aria-live="polite"></p>
-      <p class="x-underclass-hint">Stay on track. Twitter can wait.</p>
+      <p class="x-underclass-hint">Stay focused. You can relax post AGI</p>
     </div>
   `;
 
@@ -202,8 +201,6 @@ function cacheOverlayElements(overlay) {
     countdown: overlay.querySelector(".x-underclass-countdown"),
     focusInput: overlay.querySelector("#x-underclass-focus-input"),
     breakInput: overlay.querySelector("#x-underclass-break-input"),
-    form: overlay.querySelector(".x-underclass-form"),
-    saveButton: overlay.querySelector(".x-underclass-save"),
     feedback: overlay.querySelector(".x-underclass-feedback"),
     startButton: overlay.querySelector('[data-action="start"]'),
     startBreakButton: overlay.querySelector('[data-action="start-break"]'),
@@ -226,8 +223,11 @@ function attachEventHandlers() {
     removeOverlay();
   });
 
-  overlayElements.form.addEventListener("submit", async event => {
-    event.preventDefault();
+  overlayElements.focusInput.addEventListener("change", async () => {
+    await saveDurations();
+  });
+
+  overlayElements.breakInput.addEventListener("change", async () => {
     await saveDurations();
   });
 
@@ -327,7 +327,7 @@ function describeState(state) {
   }
 
   if (state.status === "break_ready") {
-    return "Focus complete – start your break";
+    return "Focus complete - you may goon";
   }
 
   return "Idle";
@@ -345,8 +345,7 @@ function setButtonsDisabled(disabled) {
     overlayElements.startBreakButton,
     overlayElements.pauseButton,
     overlayElements.resumeButton,
-    overlayElements.stopButton,
-    overlayElements.saveButton
+    overlayElements.stopButton
   ];
   buttons.forEach(btn => {
     if (btn) btn.disabled = disabled;
