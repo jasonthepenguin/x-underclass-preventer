@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="#000000"/>
+
+  <!-- X logo (simplified) -->
+  <path d="M 45 35 L 64 58 L 83 35 L 93 35 L 69 64 L 93 93 L 83 93 L 64 70 L 45 93 L 35 93 L 59 64 L 35 35 Z" fill="white"/>
+
+  <!-- Red prohibition circle -->
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#FF0000" stroke-width="10"/>
+
+  <!-- Red diagonal line -->
+  <line x1="24" y1="24" x2="104" y2="104" stroke="#FF0000" stroke-width="10" stroke-linecap="round"/>
+</svg>
