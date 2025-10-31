@@ -795,19 +795,45 @@ function renderShortcutsList() {
   }
 
   overlayElements.shortcutsList.innerHTML = shortcuts.map((shortcut, index) => `
-    <div class="x-underclass-shortcut-item">
-      <div class="x-underclass-shortcut-info">
-        <span class="x-underclass-shortcut-item-name">${escapeHtml(shortcut.name)}</span>
-        <span class="x-underclass-shortcut-item-url">${escapeHtml(shortcut.url)}</span>
+    <div class="x-underclass-shortcut-item" data-index="${index}">
+      <div class="x-underclass-shortcut-display">
+        <div class="x-underclass-shortcut-info">
+          <span class="x-underclass-shortcut-item-name">${escapeHtml(shortcut.name)}</span>
+          <span class="x-underclass-shortcut-item-url">${escapeHtml(shortcut.url)}</span>
+        </div>
+        <div class="x-underclass-shortcut-actions">
+          <button type="button" class="x-underclass-edit-shortcut" data-index="${index}" aria-label="Edit shortcut" title="Edit">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+            </svg>
+          </button>
+          <button type="button" class="x-underclass-delete-shortcut" data-index="${index}" aria-label="Delete shortcut" title="Delete">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+              <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <button type="button" class="x-underclass-delete-shortcut" data-index="${index}" aria-label="Delete shortcut">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-          <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-        </svg>
-      </button>
+      <div class="x-underclass-shortcut-edit hidden">
+        <input type="text" class="x-underclass-edit-name" value="${escapeHtml(shortcut.name)}" placeholder="Name" />
+        <input type="url" class="x-underclass-edit-url" value="${escapeHtml(shortcut.url)}" placeholder="URL" />
+        <div class="x-underclass-edit-actions">
+          <button type="button" class="x-underclass-save-edit" data-index="${index}">Save</button>
+          <button type="button" class="x-underclass-cancel-edit" data-index="${index}">Cancel</button>
+        </div>
+      </div>
     </div>
   `).join("");
+
+  // Attach edit handlers
+  const editButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-edit-shortcut");
+  editButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = parseInt(btn.getAttribute("data-index"), 10);
+      enterEditMode(index);
+    });
+  });
 
   // Attach delete handlers
   const deleteButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-delete-shortcut");
@@ -817,6 +843,108 @@ function renderShortcutsList() {
       deleteShortcut(index);
     });
   });
+
+  // Attach save edit handlers
+  const saveButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-save-edit");
+  saveButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = parseInt(btn.getAttribute("data-index"), 10);
+      saveEdit(index);
+    });
+  });
+
+  // Attach cancel edit handlers
+  const cancelButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-cancel-edit");
+  cancelButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = parseInt(btn.getAttribute("data-index"), 10);
+      cancelEdit(index);
+    });
+  });
+}
+
+function enterEditMode(index) {
+  if (!overlayElements?.shortcutsList) return;
+
+  const item = overlayElements.shortcutsList.querySelector(`[data-index="${index}"]`);
+  if (!item) return;
+
+  const displayDiv = item.querySelector(".x-underclass-shortcut-display");
+  const editDiv = item.querySelector(".x-underclass-shortcut-edit");
+
+  if (displayDiv && editDiv) {
+    displayDiv.classList.add("hidden");
+    editDiv.classList.remove("hidden");
+
+    // Focus on the name input
+    const nameInput = editDiv.querySelector(".x-underclass-edit-name");
+    if (nameInput) {
+      nameInput.focus();
+      nameInput.select();
+    }
+  }
+}
+
+function cancelEdit(index) {
+  if (!overlayElements?.shortcutsList) return;
+
+  const item = overlayElements.shortcutsList.querySelector(`[data-index="${index}"]`);
+  if (!item) return;
+
+  const displayDiv = item.querySelector(".x-underclass-shortcut-display");
+  const editDiv = item.querySelector(".x-underclass-shortcut-edit");
+
+  if (displayDiv && editDiv) {
+    // Reset input values to original
+    const nameInput = editDiv.querySelector(".x-underclass-edit-name");
+    const urlInput = editDiv.querySelector(".x-underclass-edit-url");
+
+    if (nameInput && urlInput && shortcuts[index]) {
+      nameInput.value = shortcuts[index].name;
+      urlInput.value = shortcuts[index].url;
+    }
+
+    displayDiv.classList.remove("hidden");
+    editDiv.classList.add("hidden");
+  }
+}
+
+async function saveEdit(index) {
+  if (!overlayElements?.shortcutsList) return;
+
+  const item = overlayElements.shortcutsList.querySelector(`[data-index="${index}"]`);
+  if (!item) return;
+
+  const editDiv = item.querySelector(".x-underclass-shortcut-edit");
+  const nameInput = editDiv?.querySelector(".x-underclass-edit-name");
+  const urlInput = editDiv?.querySelector(".x-underclass-edit-url");
+
+  if (!nameInput || !urlInput) return;
+
+  const newName = nameInput.value.trim();
+  const newUrl = urlInput.value.trim();
+
+  if (!newName || !newUrl) {
+    showFeedback("Please enter both name and URL");
+    return;
+  }
+
+  // Validate URL
+  try {
+    new URL(newUrl);
+  } catch {
+    showFeedback("Please enter a valid URL");
+    return;
+  }
+
+  // Update the shortcut
+  shortcuts[index] = { name: newName, url: newUrl };
+  const saved = await saveShortcutsToStorage(shortcuts);
+  shortcuts = saved;
+
+  renderShortcutsList();
+  renderBreakBadge(latestState);
+  showFeedback("Shortcut updated");
 }
 
 function escapeHtml(text) {

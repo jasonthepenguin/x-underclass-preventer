@@ -311,12 +311,18 @@ html.x-underclass-muted {
 
 .x-underclass-shortcut-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
+  gap: 10px;
+}
+
+.x-underclass-shortcut-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
 
@@ -344,6 +350,32 @@ html.x-underclass-muted {
   max-width: 100%;
 }
 
+.x-underclass-shortcut-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.x-underclass-edit-shortcut {
+  flex-shrink: 0;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  background: rgba(29, 161, 242, 0.15) !important;
+  color: #1da1f2 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+.x-underclass-edit-shortcut:hover {
+  background: rgba(29, 161, 242, 0.25) !important;
+  transform: none !important;
+}
+
 .x-underclass-delete-shortcut {
   flex-shrink: 0;
   width: 28px !important;
@@ -355,11 +387,84 @@ html.x-underclass-muted {
   align-items: center !important;
   justify-content: center !important;
   padding: 0 !important;
+  border: none !important;
+  cursor: pointer !important;
 }
 
 .x-underclass-delete-shortcut:hover {
   background: rgba(244, 33, 46, 0.25) !important;
   transform: none !important;
+}
+
+.x-underclass-shortcut-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.x-underclass-shortcut-edit.hidden {
+  display: none;
+}
+
+.x-underclass-edit-name,
+.x-underclass-edit-url {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #f5f8fa;
+  font-size: 13px;
+  font-family: inherit;
+  width: 100%;
+}
+
+.x-underclass-edit-name::placeholder,
+.x-underclass-edit-url::placeholder {
+  color: rgba(245, 248, 250, 0.4);
+}
+
+.x-underclass-edit-name:focus,
+.x-underclass-edit-url:focus {
+  outline: none;
+  border-color: rgba(29, 161, 242, 0.6);
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.25);
+}
+
+.x-underclass-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.x-underclass-save-edit {
+  flex: 1;
+  background: #1da1f2 !important;
+  color: #f5f8fa !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.x-underclass-save-edit:hover {
+  background: #1a8cd8 !important;
+}
+
+.x-underclass-cancel-edit {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f5f8fa !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.x-underclass-cancel-edit:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
 .x-underclass-shortcut-form {
