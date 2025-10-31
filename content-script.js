@@ -284,6 +284,7 @@ function ensureOverlay() {
 function cacheOverlayElements(overlay) {
   overlayElements = {
     overlay,
+    backdrop: overlay.querySelector(".x-underclass-backdrop"),
     closeButton: overlay.querySelector(".x-underclass-close"),
     settingsBtn: overlay.querySelector(".x-underclass-settings-btn"),
     settingsPanel: overlay.querySelector(".x-underclass-settings-panel"),
@@ -322,14 +323,14 @@ function attachEventHandlers() {
   });
 
   overlayElements.closeButton.addEventListener("click", () => {
-    if (latestState &&
-        ((latestState.status === "running" && latestState.phase === "focus") ||
-         latestState.status === "paused")) {
-      return;
-    }
-    userOverlayActive = false;
-    removeOverlay();
+    dismissOverlayIfAllowed();
   });
+
+  if (overlayElements.backdrop) {
+    overlayElements.backdrop.addEventListener("click", () => {
+      dismissOverlayIfAllowed();
+    });
+  }
 
   overlayElements.focusInput.addEventListener("change", async () => {
     await saveDurations();
@@ -394,6 +395,20 @@ function attachEventHandlers() {
     isActionInProgress = false;
     setButtonsDisabled(false);
   });
+}
+
+function canDismissOverlay() {
+  if (!latestState) return true;
+  if (latestState.status === "running" && latestState.phase === "focus") return false;
+  if (latestState.status === "paused") return false;
+  if (latestState.status === "break_ready") return false;
+  return true;
+}
+
+function dismissOverlayIfAllowed() {
+  if (!canDismissOverlay()) return;
+  userOverlayActive = false;
+  removeOverlay();
 }
 
 function renderState(state) {
