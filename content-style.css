@@ -325,6 +325,27 @@ html.x-underclass-muted {
   gap: 8px;
   max-height: 250px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 248, 250, 0.25) rgba(255, 255, 255, 0.05);
+}
+
+.x-underclass-shortcuts-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.x-underclass-shortcuts-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+
+.x-underclass-shortcuts-list::-webkit-scrollbar-thumb {
+  background: rgba(245, 248, 250, 0.25);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.x-underclass-shortcuts-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 248, 250, 0.35);
 }
 
 .x-underclass-no-shortcuts {
