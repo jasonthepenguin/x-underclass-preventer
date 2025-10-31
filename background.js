@@ -4,6 +4,7 @@ const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
 
 const STORAGE_KEY = "xUnderclassPomodoroState";
+const SHORTCUTS_KEY = "xUnderclassShortcuts";
 const ALARM_NAME = "pomodoroTransition";
 
 const DEFAULT_STATE = {
@@ -59,6 +60,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       stopSession()
         .then(state => sendResponse({ state }))
         .catch(() => sendResponse({ state: null }));
+      return true;
+    case "GET_SHORTCUTS":
+      getShortcuts()
+        .then(shortcuts => sendResponse({ shortcuts }))
+        .catch(() => sendResponse({ shortcuts: [] }));
+      return true;
+    case "SAVE_SHORTCUTS":
+      saveShortcuts(request.shortcuts)
+        .then(shortcuts => sendResponse({ shortcuts }))
+        .catch(() => sendResponse({ shortcuts: [] }));
       return true;
     default:
       return false;
@@ -394,16 +405,17 @@ function minutesFromMs(ms) {
 }
 
 async function broadcastState(state) {
+  // Broadcast to extension context (for popup, options page, etc.)
   try {
     chrome.runtime.sendMessage({ type: "STATE_UPDATED", state }, () => {
-      if (chrome.runtime.lastError) {
-        // ignore runtime message errors
-      }
+      // Check for lastError to prevent console errors
+      void chrome.runtime.lastError;
     });
   } catch (error) {
-    // ignore runtime message errors
+    // Silently ignore - no receiving context available
   }
 
+  // Broadcast to all X/Twitter content scripts
   try {
     const tabs = await chrome.tabs.query({
       url: [
@@ -415,14 +427,16 @@ async function broadcastState(state) {
     });
 
     for (const tab of tabs) {
-      chrome.tabs.sendMessage(tab.id, { type: "STATE_UPDATED", state }, () => {
-        if (chrome.runtime.lastError) {
-          // ignore tab message errors
+      if (tab.id) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { type: "STATE_UPDATED", state });
+        } catch (error) {
+          // Tab might be closed or content script not loaded - silently ignore
         }
-      });
+      }
     }
   } catch (error) {
-    // ignore broadcast failures
+    // Query failed - silently ignore
   }
 }
 
@@ -432,12 +446,12 @@ async function handleActionClick(tab) {
 
   try {
     const state = await ensureState();
-    chrome.tabs.sendMessage(tab.id, {
+    await chrome.tabs.sendMessage(tab.id, {
       type: "OPEN_CONTROLS",
       state
     });
   } catch (error) {
-    // best effort; ignore if content script is unreachable
+    // Content script not loaded or tab closed - silently ignore
   }
 }
 
@@ -478,4 +492,25 @@ async function transitionToNextFocus(state) {
   await saveState(updated);
   await broadcastState(updated);
   return updated;
+}
+
+async function getShortcuts() {
+  try {
+    const stored = await chrome.storage.local.get(SHORTCUTS_KEY);
+    return stored[SHORTCUTS_KEY] ?? [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function saveShortcuts(shortcuts) {
+  try {
+    const validShortcuts = (shortcuts || []).filter(
+      s => s && typeof s.name === 'string' && typeof s.url === 'string'
+    );
+    await chrome.storage.local.set({ [SHORTCUTS_KEY]: validShortcuts });
+    return validShortcuts;
+  } catch (error) {
+    return [];
+  }
 }

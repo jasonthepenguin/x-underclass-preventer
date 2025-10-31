@@ -16,6 +16,8 @@ let userOverlayActive = false;
 let overlayElements = null;
 let isActionInProgress = false;
 let audioContext = null;
+let shortcuts = [];
+let settingsPanelVisible = false;
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);
@@ -31,6 +33,7 @@ window.addEventListener("beforeunload", () => {
 
 async function initialize() {
   latestState = await requestState();
+  shortcuts = await loadShortcuts();
   updateOverlay(latestState);
   renderBreakBadge(latestState);
   subscribeToMessages();
@@ -214,6 +217,12 @@ function ensureOverlay() {
   overlay.innerHTML = `
     <div class="x-underclass-backdrop"></div>
     <div class="x-underclass-modal" role="dialog" aria-modal="true">
+      <button type="button" class="x-underclass-settings-btn" aria-label="Settings" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
       <button type="button" class="x-underclass-close" aria-label="Close focus overlay">×</button>
       <h1 class="x-underclass-title">Focus Time</h1>
       <p class="x-underclass-status">Idle</p>
@@ -238,6 +247,20 @@ function ensureOverlay() {
       <p class="x-underclass-feedback" role="status" aria-live="polite"></p>
       <p class="x-underclass-hint">Stay focused. You can relax post AGI</p>
     </div>
+    <div class="x-underclass-settings-panel hidden">
+      <div class="x-underclass-settings-header">
+        <h2>Shortcuts</h2>
+        <button type="button" class="x-underclass-settings-close" aria-label="Close settings">×</button>
+      </div>
+      <div class="x-underclass-settings-content">
+        <div class="x-underclass-shortcuts-list"></div>
+        <div class="x-underclass-shortcut-form">
+          <input type="text" class="x-underclass-shortcut-name" placeholder="Name" />
+          <input type="url" class="x-underclass-shortcut-url" placeholder="URL" />
+          <button type="button" class="x-underclass-add-shortcut">Add Shortcut</button>
+        </div>
+      </div>
+    </div>
   `;
 
   document.body.appendChild(overlay);
@@ -250,6 +273,13 @@ function cacheOverlayElements(overlay) {
   overlayElements = {
     overlay,
     closeButton: overlay.querySelector(".x-underclass-close"),
+    settingsBtn: overlay.querySelector(".x-underclass-settings-btn"),
+    settingsPanel: overlay.querySelector(".x-underclass-settings-panel"),
+    settingsClose: overlay.querySelector(".x-underclass-settings-close"),
+    shortcutsList: overlay.querySelector(".x-underclass-shortcuts-list"),
+    shortcutNameInput: overlay.querySelector(".x-underclass-shortcut-name"),
+    shortcutUrlInput: overlay.querySelector(".x-underclass-shortcut-url"),
+    addShortcutBtn: overlay.querySelector(".x-underclass-add-shortcut"),
     status: overlay.querySelector(".x-underclass-status"),
     countdown: overlay.querySelector(".x-underclass-countdown"),
     focusInput: overlay.querySelector("#x-underclass-focus-input"),
@@ -265,6 +295,18 @@ function cacheOverlayElements(overlay) {
 
 function attachEventHandlers() {
   if (!overlayElements) return;
+
+  overlayElements.settingsBtn.addEventListener("click", () => {
+    toggleSettingsPanel();
+  });
+
+  overlayElements.settingsClose.addEventListener("click", () => {
+    toggleSettingsPanel();
+  });
+
+  overlayElements.addShortcutBtn.addEventListener("click", async () => {
+    await addShortcut();
+  });
 
   overlayElements.closeButton.addEventListener("click", () => {
     if (latestState &&
@@ -574,6 +616,22 @@ function renderBreakBadge(state) {
   if (countdownEl) {
     countdownEl.textContent = countdownText;
   }
+
+  // Update shortcuts list
+  const shortcutsContainer = badge.querySelector(".x-underclass-badge-shortcuts");
+  if (shortcutsContainer) {
+    if (shortcuts.length === 0) {
+      shortcutsContainer.innerHTML = '<p class="x-underclass-badge-no-shortcuts">No shortcuts yet</p>';
+    } else {
+      shortcutsContainer.innerHTML = shortcuts.map(shortcut => `
+        <a href="${escapeHtml(shortcut.url)}"
+           class="x-underclass-badge-shortcut-link"
+           title="${escapeHtml(shortcut.url)}">
+          ${escapeHtml(shortcut.name)}
+        </a>
+      `).join("");
+    }
+  }
 }
 
 function ensureBreakBadge() {
@@ -583,8 +641,11 @@ function ensureBreakBadge() {
   badge = document.createElement("div");
   badge.id = BREAK_BADGE_ID;
   badge.innerHTML = `
-    <span class="x-underclass-badge-label">Break</span>
-    <span class="x-underclass-badge-countdown">--:--</span>
+    <div class="x-underclass-badge-header">
+      <span class="x-underclass-badge-label">Break</span>
+      <span class="x-underclass-badge-countdown">--:--</span>
+    </div>
+    <div class="x-underclass-badge-shortcuts"></div>
   `;
 
   document.body.appendChild(badge);
@@ -627,4 +688,127 @@ function dispatch(type, payload = {}) {
       resolve(null);
     }
   });
+}
+
+async function loadShortcuts() {
+  return new Promise(resolve => {
+    try {
+      chrome.runtime.sendMessage({ type: "GET_SHORTCUTS" }, response => {
+        if (chrome.runtime.lastError) {
+          resolve([]);
+          return;
+        }
+        resolve(response?.shortcuts ?? []);
+      });
+    } catch (error) {
+      resolve([]);
+    }
+  });
+}
+
+async function saveShortcutsToStorage(newShortcuts) {
+  return new Promise(resolve => {
+    try {
+      chrome.runtime.sendMessage({ type: "SAVE_SHORTCUTS", shortcuts: newShortcuts }, response => {
+        if (chrome.runtime.lastError) {
+          resolve([]);
+          return;
+        }
+        resolve(response?.shortcuts ?? []);
+      });
+    } catch (error) {
+      resolve([]);
+    }
+  });
+}
+
+function toggleSettingsPanel() {
+  if (!overlayElements) return;
+
+  settingsPanelVisible = !settingsPanelVisible;
+  overlayElements.settingsPanel.classList.toggle("hidden", !settingsPanelVisible);
+
+  if (settingsPanelVisible) {
+    renderShortcutsList();
+  }
+}
+
+async function addShortcut() {
+  if (!overlayElements) return;
+
+  const name = overlayElements.shortcutNameInput.value.trim();
+  const url = overlayElements.shortcutUrlInput.value.trim();
+
+  if (!name || !url) {
+    showFeedback("Please enter both name and URL");
+    return;
+  }
+
+  // Validate URL
+  try {
+    new URL(url);
+  } catch {
+    showFeedback("Please enter a valid URL");
+    return;
+  }
+
+  shortcuts.push({ name, url });
+  const saved = await saveShortcutsToStorage(shortcuts);
+  shortcuts = saved;
+
+  overlayElements.shortcutNameInput.value = "";
+  overlayElements.shortcutUrlInput.value = "";
+
+  renderShortcutsList();
+  renderBreakBadge(latestState);
+  showFeedback("Shortcut added");
+}
+
+async function deleteShortcut(index) {
+  shortcuts.splice(index, 1);
+  const saved = await saveShortcutsToStorage(shortcuts);
+  shortcuts = saved;
+
+  renderShortcutsList();
+  renderBreakBadge(latestState);
+  showFeedback("Shortcut deleted");
+}
+
+function renderShortcutsList() {
+  if (!overlayElements?.shortcutsList) return;
+
+  if (shortcuts.length === 0) {
+    overlayElements.shortcutsList.innerHTML = '<p class="x-underclass-no-shortcuts">No shortcuts yet. Add one below!</p>';
+    return;
+  }
+
+  overlayElements.shortcutsList.innerHTML = shortcuts.map((shortcut, index) => `
+    <div class="x-underclass-shortcut-item">
+      <div class="x-underclass-shortcut-info">
+        <span class="x-underclass-shortcut-item-name">${escapeHtml(shortcut.name)}</span>
+        <span class="x-underclass-shortcut-item-url">${escapeHtml(shortcut.url)}</span>
+      </div>
+      <button type="button" class="x-underclass-delete-shortcut" data-index="${index}" aria-label="Delete shortcut">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+          <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+        </svg>
+      </button>
+    </div>
+  `).join("");
+
+  // Attach delete handlers
+  const deleteButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-delete-shortcut");
+  deleteButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = parseInt(btn.getAttribute("data-index"), 10);
+      deleteShortcut(index);
+    });
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
 }

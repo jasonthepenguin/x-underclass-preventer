@@ -219,3 +219,266 @@ html.x-underclass-muted {
   font-variant-numeric: tabular-nums;
   font-size: 16px;
 }
+
+/* Settings button (cog icon) */
+.x-underclass-settings-btn {
+  position: absolute !important;
+  top: 16px !important;
+  left: 16px !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(245, 248, 250, 0.85) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.x-underclass-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Settings panel */
+.x-underclass-settings-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, 92vw);
+  max-height: 80vh;
+  background: rgba(21, 24, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 24px;
+  z-index: 10;
+  overflow-y: auto;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.55);
+}
+
+.x-underclass-settings-panel.hidden {
+  display: none !important;
+}
+
+.x-underclass-settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.x-underclass-settings-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.x-underclass-settings-close {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(245, 248, 250, 0.85) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.x-underclass-settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.x-underclass-shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.x-underclass-no-shortcuts {
+  text-align: center;
+  color: rgba(245, 248, 250, 0.5);
+  font-size: 14px;
+  padding: 20px;
+}
+
+.x-underclass-shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  gap: 10px;
+}
+
+.x-underclass-shortcut-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.x-underclass-shortcut-item-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: #f5f8fa;
+}
+
+.x-underclass-shortcut-item-url {
+  font-size: 12px;
+  color: rgba(245, 248, 250, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.x-underclass-delete-shortcut {
+  flex-shrink: 0;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  background: rgba(244, 33, 46, 0.15) !important;
+  color: #f4212e !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+
+.x-underclass-delete-shortcut:hover {
+  background: rgba(244, 33, 46, 0.25) !important;
+  transform: none !important;
+}
+
+.x-underclass-shortcut-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.x-underclass-shortcut-name,
+.x-underclass-shortcut-url {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f5f8fa;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.x-underclass-shortcut-name::placeholder,
+.x-underclass-shortcut-url::placeholder {
+  color: rgba(245, 248, 250, 0.4);
+}
+
+.x-underclass-shortcut-name:focus,
+.x-underclass-shortcut-url:focus {
+  outline: none;
+  border-color: rgba(29, 161, 242, 0.6);
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.25);
+}
+
+.x-underclass-add-shortcut {
+  background: #1da1f2 !important;
+  color: #f5f8fa !important;
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 16px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+/* Updated break badge with shortcuts */
+#x-underclass-break-badge {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 2147483646;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-radius: 16px;
+  background: rgba(15, 20, 25, 0.92);
+  color: #f5f8fa;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  max-width: 300px;
+  backdrop-filter: blur(10px);
+}
+
+.x-underclass-badge-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#x-underclass-break-badge .x-underclass-badge-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(245, 248, 250, 0.7);
+}
+
+#x-underclass-break-badge .x-underclass-badge-countdown {
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+}
+
+.x-underclass-badge-shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px;
+}
+
+.x-underclass-badge-no-shortcuts {
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(245, 248, 250, 0.4);
+  font-weight: 400;
+  margin: 0;
+}
+
+.x-underclass-badge-shortcut-link {
+  display: block;
+  padding: 8px 10px;
+  color: #1da1f2;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.x-underclass-badge-shortcut-link:hover {
+  background: rgba(29, 161, 242, 0.1);
+  color: #3db4ff;
+}
