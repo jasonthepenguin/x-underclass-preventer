@@ -722,6 +722,27 @@ html.x-underclass-muted {
   padding-top: 8px;
 }
 
+.x-underclass-badge-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.x-underclass-payout-label {
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(245, 248, 250, 0.5);
+}
+
+.x-underclass-payout-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(245, 248, 250, 0.85);
+}
+
 .x-underclass-badge-no-shortcuts {
   padding: 8px 6px;
   text-align: center;

@@ -9,6 +9,10 @@ const DEFAULT_FALLBACK_STATE = {
   breakMinutes: 5
 };
 
+const LAST_PAYOUT_END = parseDateString("Oct 25, 2025");
+const PAYOUT_DURATION_DAYS = 14;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 let latestState = null;
 let countdownInterval = null;
 let feedbackTimer = null;
@@ -411,6 +415,46 @@ function dismissOverlayIfAllowed() {
   removeOverlay();
 }
 
+function getNextPayoutDate() {
+  if (!isValidDate(LAST_PAYOUT_END)) {
+    return "TBD";
+  }
+
+  const nextStart = new Date(LAST_PAYOUT_END.getTime() + MS_PER_DAY);
+  const nextEnd = new Date(nextStart.getTime() + PAYOUT_DURATION_DAYS * MS_PER_DAY);
+
+  return formatPayoutDate(nextEnd);
+}
+
+function formatPayoutDate(date) {
+  if (!isValidDate(date)) {
+    return "TBD";
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function parseDateString(dateStr) {
+  if (typeof dateStr !== "string") {
+    return new Date(NaN);
+  }
+
+  const parsed = Date.parse(dateStr);
+  if (Number.isNaN(parsed)) {
+    return new Date(NaN);
+  }
+
+  return new Date(parsed);
+}
+
+function isValidDate(date) {
+  return date instanceof Date && !Number.isNaN(date.getTime());
+}
+
 function renderState(state) {
   if (!overlayElements) return;
 
@@ -676,6 +720,11 @@ function renderBreakBadge(state) {
       }).join("");
     }
   }
+
+  const payoutDateEl = badge.querySelector(".x-underclass-payout-date");
+  if (payoutDateEl) {
+    payoutDateEl.textContent = getNextPayoutDate();
+  }
 }
 
 function ensureBreakBadge() {
@@ -690,6 +739,10 @@ function ensureBreakBadge() {
       <span class="x-underclass-badge-countdown">--:--</span>
     </div>
     <div class="x-underclass-badge-shortcuts"></div>
+    <div class="x-underclass-badge-footer">
+      <span class="x-underclass-payout-label">Next X payout</span>
+      <span class="x-underclass-payout-date">—</span>
+    </div>
   `;
 
   document.body.appendChild(badge);
