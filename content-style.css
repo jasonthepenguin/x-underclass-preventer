@@ -455,6 +455,11 @@ html.x-underclass-muted {
   padding: 8px;
 }
 
+/* Add padding when header is hidden */
+.x-underclass-badge-header[style*="display: none"] + .x-underclass-badge-shortcuts {
+  padding-top: 8px;
+}
+
 .x-underclass-badge-no-shortcuts {
   padding: 8px 6px;
   text-align: center;

@@ -605,16 +605,28 @@ function removeOverlay() {
 }
 
 function renderBreakBadge(state) {
-  if (!state || state.status !== "running" || state.phase !== "break") {
+  const isOnBreak = state && state.status === "running" && state.phase === "break";
+
+  // Hide badge if no shortcuts and not on break
+  if (!isOnBreak && shortcuts.length === 0) {
     removeBreakBadge();
     return;
   }
 
   const badge = ensureBreakBadge();
-  const countdownText = formatRemaining(state);
-  const countdownEl = badge.querySelector(".x-underclass-badge-countdown");
-  if (countdownEl) {
-    countdownEl.textContent = countdownText;
+
+  // Show/hide header based on break status
+  const header = badge.querySelector(".x-underclass-badge-header");
+  if (header) {
+    header.style.display = isOnBreak ? "flex" : "none";
+
+    if (isOnBreak) {
+      const countdownText = formatRemaining(state);
+      const countdownEl = header.querySelector(".x-underclass-badge-countdown");
+      if (countdownEl) {
+        countdownEl.textContent = countdownText;
+      }
+    }
   }
 
   // Update shortcuts list
