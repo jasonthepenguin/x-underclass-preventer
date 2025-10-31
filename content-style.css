@@ -317,6 +317,24 @@ html.x-underclass-muted {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
   gap: 10px;
+  cursor: move;
+  cursor: grab;
+  transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.x-underclass-shortcut-item:active {
+  cursor: grabbing;
+}
+
+.x-underclass-shortcut-item.x-underclass-dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+.x-underclass-shortcut-item.x-underclass-drag-over {
+  border-color: rgba(29, 161, 242, 0.6);
+  background: rgba(29, 161, 242, 0.1);
+  transform: translateY(-2px);
 }
 
 .x-underclass-shortcut-display {
@@ -324,6 +342,25 @@ html.x-underclass-muted {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.x-underclass-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(245, 248, 250, 0.4);
+  flex-shrink: 0;
+  cursor: grab;
+  transition: color 0.2s ease;
+  padding: 2px;
+}
+
+.x-underclass-drag-handle:hover {
+  color: rgba(245, 248, 250, 0.7);
+}
+
+.x-underclass-drag-handle:active {
+  cursor: grabbing;
 }
 
 .x-underclass-shortcut-info {

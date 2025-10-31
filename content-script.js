@@ -795,8 +795,13 @@ function renderShortcutsList() {
   }
 
   overlayElements.shortcutsList.innerHTML = shortcuts.map((shortcut, index) => `
-    <div class="x-underclass-shortcut-item" data-index="${index}">
+    <div class="x-underclass-shortcut-item" data-index="${index}" draggable="true">
       <div class="x-underclass-shortcut-display">
+        <div class="x-underclass-drag-handle" title="Drag to reorder">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm5-10a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+          </svg>
+        </div>
         <div class="x-underclass-shortcut-info">
           <span class="x-underclass-shortcut-item-name">${escapeHtml(shortcut.name)}</span>
           <span class="x-underclass-shortcut-item-url">${escapeHtml(shortcut.url)}</span>
@@ -860,6 +865,16 @@ function renderShortcutsList() {
       const index = parseInt(btn.getAttribute("data-index"), 10);
       cancelEdit(index);
     });
+  });
+
+  // Attach drag and drop handlers
+  const shortcutItems = overlayElements.shortcutsList.querySelectorAll(".x-underclass-shortcut-item");
+  shortcutItems.forEach(item => {
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragend", handleDragEnd);
+    item.addEventListener("dragleave", handleDragLeave);
   });
 }
 
@@ -951,4 +966,80 @@ function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Drag and drop state
+let draggedItemIndex = null;
+
+function handleDragStart(e) {
+  const item = e.currentTarget;
+  draggedItemIndex = parseInt(item.getAttribute("data-index"), 10);
+
+  item.classList.add("x-underclass-dragging");
+  e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/html", item.innerHTML);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+
+  const item = e.currentTarget;
+  const targetIndex = parseInt(item.getAttribute("data-index"), 10);
+
+  if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
+    return;
+  }
+
+  item.classList.add("x-underclass-drag-over");
+}
+
+function handleDragLeave(e) {
+  const item = e.currentTarget;
+  item.classList.remove("x-underclass-drag-over");
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const item = e.currentTarget;
+  const targetIndex = parseInt(item.getAttribute("data-index"), 10);
+
+  item.classList.remove("x-underclass-drag-over");
+
+  if (draggedItemIndex === null || draggedItemIndex === targetIndex) {
+    return;
+  }
+
+  // Reorder the shortcuts array
+  const draggedItem = shortcuts[draggedItemIndex];
+  const newShortcuts = [...shortcuts];
+
+  // Remove the dragged item
+  newShortcuts.splice(draggedItemIndex, 1);
+
+  // Insert at the new position
+  newShortcuts.splice(targetIndex, 0, draggedItem);
+
+  // Update and save
+  shortcuts = newShortcuts;
+  saveShortcutsToStorage(shortcuts).then(saved => {
+    shortcuts = saved;
+    renderShortcutsList();
+    renderBreakBadge(latestState);
+  });
+}
+
+function handleDragEnd(e) {
+  const item = e.currentTarget;
+  item.classList.remove("x-underclass-dragging");
+
+  // Clean up all drag-over classes
+  const allItems = overlayElements?.shortcutsList?.querySelectorAll(".x-underclass-shortcut-item");
+  if (allItems) {
+    allItems.forEach(i => i.classList.remove("x-underclass-drag-over"));
+  }
+
+  draggedItemIndex = null;
 }
