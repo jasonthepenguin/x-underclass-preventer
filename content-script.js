@@ -257,6 +257,12 @@ function ensureOverlay() {
         <div class="x-underclass-shortcut-form">
           <input type="text" class="x-underclass-shortcut-name" placeholder="Name" />
           <input type="url" class="x-underclass-shortcut-url" placeholder="URL" />
+          <div class="x-underclass-color-picker-wrapper">
+            <label class="x-underclass-color-label">
+              <span>Color</span>
+              <input type="color" class="x-underclass-shortcut-color" value="#1da1f2" />
+            </label>
+          </div>
           <button type="button" class="x-underclass-add-shortcut">Add Shortcut</button>
         </div>
       </div>
@@ -279,6 +285,7 @@ function cacheOverlayElements(overlay) {
     shortcutsList: overlay.querySelector(".x-underclass-shortcuts-list"),
     shortcutNameInput: overlay.querySelector(".x-underclass-shortcut-name"),
     shortcutUrlInput: overlay.querySelector(".x-underclass-shortcut-url"),
+    shortcutColorInput: overlay.querySelector(".x-underclass-shortcut-color"),
     addShortcutBtn: overlay.querySelector(".x-underclass-add-shortcut"),
     status: overlay.querySelector(".x-underclass-status"),
     countdown: overlay.querySelector(".x-underclass-countdown"),
@@ -635,13 +642,17 @@ function renderBreakBadge(state) {
     if (shortcuts.length === 0) {
       shortcutsContainer.innerHTML = '<p class="x-underclass-badge-no-shortcuts">No shortcuts yet</p>';
     } else {
-      shortcutsContainer.innerHTML = shortcuts.map(shortcut => `
+      shortcutsContainer.innerHTML = shortcuts.map(shortcut => {
+        const color = shortcut.color || "#1da1f2";
+        return `
         <a href="${escapeHtml(shortcut.url)}"
            class="x-underclass-badge-shortcut-link"
+           style="color: ${color};"
            title="${escapeHtml(shortcut.url)}">
           ${escapeHtml(shortcut.name)}
         </a>
-      `).join("");
+      `;
+      }).join("");
     }
   }
 }
@@ -750,6 +761,7 @@ async function addShortcut() {
 
   const name = overlayElements.shortcutNameInput.value.trim();
   const url = overlayElements.shortcutUrlInput.value.trim();
+  const color = overlayElements.shortcutColorInput?.value || "#1da1f2";
 
   if (!name || !url) {
     showFeedback("Please enter both name and URL");
@@ -764,12 +776,15 @@ async function addShortcut() {
     return;
   }
 
-  shortcuts.push({ name, url });
+  shortcuts.push({ name, url, color });
   const saved = await saveShortcutsToStorage(shortcuts);
   shortcuts = saved;
 
   overlayElements.shortcutNameInput.value = "";
   overlayElements.shortcutUrlInput.value = "";
+  if (overlayElements.shortcutColorInput) {
+    overlayElements.shortcutColorInput.value = "#1da1f2";
+  }
 
   renderShortcutsList();
   renderBreakBadge(latestState);
@@ -794,7 +809,9 @@ function renderShortcutsList() {
     return;
   }
 
-  overlayElements.shortcutsList.innerHTML = shortcuts.map((shortcut, index) => `
+  overlayElements.shortcutsList.innerHTML = shortcuts.map((shortcut, index) => {
+    const color = shortcut.color || "#1da1f2";
+    return `
     <div class="x-underclass-shortcut-item" data-index="${index}" draggable="true">
       <div class="x-underclass-shortcut-display">
         <div class="x-underclass-drag-handle" title="Drag to reorder">
@@ -803,7 +820,7 @@ function renderShortcutsList() {
           </svg>
         </div>
         <div class="x-underclass-shortcut-info">
-          <span class="x-underclass-shortcut-item-name">${escapeHtml(shortcut.name)}</span>
+          <span class="x-underclass-shortcut-item-name" style="color: ${color};">${escapeHtml(shortcut.name)}</span>
           <span class="x-underclass-shortcut-item-url">${escapeHtml(shortcut.url)}</span>
         </div>
         <div class="x-underclass-shortcut-actions">
@@ -823,13 +840,26 @@ function renderShortcutsList() {
       <div class="x-underclass-shortcut-edit hidden">
         <input type="text" class="x-underclass-edit-name" value="${escapeHtml(shortcut.name)}" placeholder="Name" />
         <input type="url" class="x-underclass-edit-url" value="${escapeHtml(shortcut.url)}" placeholder="URL" />
+        <div class="x-underclass-color-picker-wrapper">
+          <label class="x-underclass-color-label">
+            <span>Color</span>
+            <input type="color" class="x-underclass-edit-color" value="${color}" />
+            <button type="button" class="x-underclass-reset-color" data-index="${index}" title="Reset to default blue">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+              </svg>
+            </button>
+          </label>
+        </div>
         <div class="x-underclass-edit-actions">
           <button type="button" class="x-underclass-save-edit" data-index="${index}">Save</button>
           <button type="button" class="x-underclass-cancel-edit" data-index="${index}">Cancel</button>
         </div>
       </div>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   // Attach edit handlers
   const editButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-edit-shortcut");
@@ -864,6 +894,15 @@ function renderShortcutsList() {
     btn.addEventListener("click", () => {
       const index = parseInt(btn.getAttribute("data-index"), 10);
       cancelEdit(index);
+    });
+  });
+
+  // Attach reset color handlers
+  const resetColorButtons = overlayElements.shortcutsList.querySelectorAll(".x-underclass-reset-color");
+  resetColorButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const index = parseInt(btn.getAttribute("data-index"), 10);
+      resetColor(index);
     });
   });
 
@@ -913,14 +952,32 @@ function cancelEdit(index) {
     // Reset input values to original
     const nameInput = editDiv.querySelector(".x-underclass-edit-name");
     const urlInput = editDiv.querySelector(".x-underclass-edit-url");
+    const colorInput = editDiv.querySelector(".x-underclass-edit-color");
 
     if (nameInput && urlInput && shortcuts[index]) {
       nameInput.value = shortcuts[index].name;
       urlInput.value = shortcuts[index].url;
+      if (colorInput) {
+        colorInput.value = shortcuts[index].color || "#1da1f2";
+      }
     }
 
     displayDiv.classList.remove("hidden");
     editDiv.classList.add("hidden");
+  }
+}
+
+function resetColor(index) {
+  if (!overlayElements?.shortcutsList) return;
+
+  const item = overlayElements.shortcutsList.querySelector(`[data-index="${index}"]`);
+  if (!item) return;
+
+  const editDiv = item.querySelector(".x-underclass-shortcut-edit");
+  const colorInput = editDiv?.querySelector(".x-underclass-edit-color");
+
+  if (colorInput) {
+    colorInput.value = "#1da1f2";
   }
 }
 
@@ -933,11 +990,13 @@ async function saveEdit(index) {
   const editDiv = item.querySelector(".x-underclass-shortcut-edit");
   const nameInput = editDiv?.querySelector(".x-underclass-edit-name");
   const urlInput = editDiv?.querySelector(".x-underclass-edit-url");
+  const colorInput = editDiv?.querySelector(".x-underclass-edit-color");
 
   if (!nameInput || !urlInput) return;
 
   const newName = nameInput.value.trim();
   const newUrl = urlInput.value.trim();
+  const newColor = colorInput?.value || "#1da1f2";
 
   if (!newName || !newUrl) {
     showFeedback("Please enter both name and URL");
@@ -953,7 +1012,7 @@ async function saveEdit(index) {
   }
 
   // Update the shortcut
-  shortcuts[index] = { name: newName, url: newUrl };
+  shortcuts[index] = { name: newName, url: newUrl, color: newColor };
   const saved = await saveShortcutsToStorage(shortcuts);
   shortcuts = saved;
 

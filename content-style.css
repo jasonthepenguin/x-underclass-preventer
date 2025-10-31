@@ -546,6 +546,80 @@ html.x-underclass-muted {
   cursor: pointer !important;
 }
 
+.x-underclass-color-picker-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.x-underclass-color-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(245, 248, 250, 0.85);
+  cursor: pointer;
+}
+
+.x-underclass-color-label span {
+  font-weight: 500;
+}
+
+.x-underclass-shortcut-color,
+.x-underclass-edit-color {
+  width: 60px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.x-underclass-shortcut-color::-webkit-color-swatch-wrapper,
+.x-underclass-edit-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.x-underclass-shortcut-color::-webkit-color-swatch,
+.x-underclass-edit-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+.x-underclass-shortcut-color:focus,
+.x-underclass-edit-color:focus {
+  outline: none;
+  border-color: rgba(29, 161, 242, 0.6);
+  box-shadow: 0 0 0 2px rgba(29, 161, 242, 0.25);
+}
+
+.x-underclass-reset-color {
+  flex-shrink: 0;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(245, 248, 250, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  cursor: pointer !important;
+  transition: background 0.2s ease, color 0.2s ease !important;
+}
+
+.x-underclass-reset-color:hover {
+  background: rgba(29, 161, 242, 0.15) !important;
+  color: #1da1f2 !important;
+  border-color: rgba(29, 161, 242, 0.3) !important;
+}
+
+.x-underclass-reset-color:active {
+  background: rgba(29, 161, 242, 0.25) !important;
+}
+
 /* Updated break badge with shortcuts */
 #x-underclass-break-badge {
   position: fixed;
